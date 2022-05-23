@@ -27,10 +27,19 @@ Usage - formats:
 import argparse
 import os
 import sys
+import time
 from pathlib import Path
+import numpy as np
+from threading import Thread
 
 import torch
 import torch.backends.cudnn as cudnn
+
+import tensorflow as tf
+from tensorflow.python.client import device_lib
+device_lib.list_local_devices()
+print(tf.test.is_built_with_cuda())
+print(tf.test.is_gpu_available())
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -45,6 +54,23 @@ from utils.general import (LOGGER, check_file, check_img_size, check_imshow, che
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
+def regression_predict(name, crop):
+    # 모델 불러오기
+    r_model = tf.keras.models.load_model('./proto1.h5')
+    # 이미지 size 조정
+    # int -> float
+    scalingFactor = 1 / 255.0
+    # Convert unsigned int 8bit to float
+    crop = np.float32(crop)
+    crop = crop * scalingFactor
+    # input layer 형식 맞추기
+    crop = cv2.resize(crop, (120, 120))
+    crop = crop.reshape(1, 120, 120, 3)
+    # model 평가 및 예측값
+    a = np.squeeze(r_model.predict(crop))
+    LOGGER.info(f'class : {name}, predict : {a}')
+
+    return
 
 @torch.no_grad()
 def run(
@@ -75,6 +101,14 @@ def run(
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
 ):
+    #test True
+    save_crop = True
+    #exist_ok = True
+    nosave = True
+    source = 0
+    weights = ROOT / 'runs/train/exp3/weights/best.pt'
+
+
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
@@ -108,6 +142,9 @@ def run(
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
     for path, im, im0s, vid_cap, s in dataset:
+        # test sleep
+        # time.sleep(1)
+
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -168,14 +205,19 @@ def run(
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
-                            save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                            crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                            cv2.imshow('crop', crop)
+                            cv2.waitKey(1)
+                            th1 = Thread(target=regression_predict, args=(names[c], crop))
+
+                            th1.start()
+                            th1.join()
 
             # Stream results
             im0 = annotator.result()
             if view_img:
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
-
             # Save results (image with detections)
             if save_img:
                 if dataset.mode == 'image':
@@ -194,7 +236,6 @@ def run(
                         save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
-
         # Print time (inference-only)
         LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
 
