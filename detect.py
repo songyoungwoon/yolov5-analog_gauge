@@ -50,13 +50,13 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from models.common import DetectMultiBackend
 from utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
 from utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
-                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
+                           increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh, xywh2xyxy, clip_coords)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
-def regression_predict(name, crop):
+def regression_predict(xyxy, frame, gn, name, crop):
     # 모델 불러오기
-    r_model = tf.keras.models.load_model('./proto1.h5')
+    r_model = tf.keras.models.load_model('./proto4.h5')
     # 이미지 size 조정
     # int -> float
     scalingFactor = 1 / 255.0
@@ -67,8 +67,13 @@ def regression_predict(name, crop):
     crop = cv2.resize(crop, (120, 120))
     crop = crop.reshape(1, 120, 120, 3)
     # model 평가 및 예측값
-    a = np.squeeze(r_model.predict(crop))
-    LOGGER.info(f'class : {name}, predict : {a}')
+    predict_digit = np.squeeze(r_model.predict(crop))
+    LOGGER.info(f'class : {name}, predict : {predict_digit}')
+    predict_digit = str(predict_digit)
+
+    # model 예측값 video에 표시
+    xyxy = torch.tensor(xyxy).view(-1, 4)
+    cv2.putText(frame, predict_digit, (int(xyxy[0][0])+5, int(xyxy[0][1])+20), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0))
 
     return
 
@@ -102,10 +107,11 @@ def run(
         dnn=False,  # use OpenCV DNN for ONNX inference
 ):
     #test True
+    view_img = True
     save_crop = True
     #exist_ok = True
-    nosave = True
-    source = 0
+    #nosave = True
+    source = '2.jpg'
     weights = ROOT / 'runs/train/exp3/weights/best.pt'
 
 
@@ -144,7 +150,6 @@ def run(
     for path, im, im0s, vid_cap, s in dataset:
         # test sleep
         # time.sleep(1)
-
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -205,11 +210,13 @@ def run(
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
+                            # bounding box images
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
                             cv2.imshow('crop', crop)
                             cv2.waitKey(1)
-                            th1 = Thread(target=regression_predict, args=(names[c], crop))
 
+                            # regression thread
+                            th1 = Thread(target=regression_predict, args=(xyxy, im0, gn, names[c], crop))
                             th1.start()
                             th1.join()
 
