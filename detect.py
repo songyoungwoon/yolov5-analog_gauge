@@ -54,26 +54,31 @@ from utils.general import (LOGGER, check_file, check_img_size, check_imshow, che
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
 
+import reader
+
 def regression_predict(xyxy, frame, gn, name, crop):
-    # 모델 불러오기
-    r_model = tf.keras.models.load_model('./proto4.h5')
-    # 이미지 size 조정
-    # int -> float
-    scalingFactor = 1 / 255.0
-    # Convert unsigned int 8bit to float
-    crop = np.float32(crop)
-    crop = crop * scalingFactor
-    # input layer 형식 맞추기
-    crop = cv2.resize(crop, (120, 120))
-    crop = crop.reshape(1, 120, 120, 3)
-    # model 평가 및 예측값
-    predict_digit = np.squeeze(r_model.predict(crop))
-    LOGGER.info(f'class : {name}, predict : {predict_digit}')
-    predict_digit = str(predict_digit)
+
+    # # 모델 불러오기
+    # r_model = tf.keras.models.load_model('./regression_models/model_8.h5')
+    # # 이미지 size 조정
+    # # int -> float
+    # scalingFactor = 1 / 255.0
+    # # Convert unsigned int 8bit to float
+    # crop = np.float32(crop)
+    # crop = crop * scalingFactor
+    # # input layer 형식 맞추기
+    # crop = cv2.resize(crop, (120, 120))
+    # crop = crop.reshape(1, 120, 120, 3)
+    # # model 평가 및 예측값
+    # predict_digit = np.squeeze(r_model.predict(crop))
+    # LOGGER.info(f'class : {name}, predict : {predict_digit}')
+    # predict_digit = str(predict_digit)
+
+    angle, num = reader.predict(crop, name)
 
     # model 예측값 video에 표시
     xyxy = torch.tensor(xyxy).view(-1, 4)
-    cv2.putText(frame, predict_digit, (int(xyxy[0][0])+5, int(xyxy[0][1])+20), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0))
+    cv2.putText(frame, str(num), (int(xyxy[0][0])+5, int(xyxy[0][1])+20), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0))
 
     return
 
@@ -83,7 +88,7 @@ def run(
         source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
-        conf_thres=0.25,  # confidence threshold
+        conf_thres=0.80,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -110,10 +115,10 @@ def run(
     view_img = True
     save_crop = True
     #exist_ok = True
-    #nosave = True
-    source = '2.jpg'
-    weights = ROOT / 'runs/train/exp3/weights/best.pt'
-
+    nosave = True
+    source = 0
+    weights = ROOT / 'runs/train/round1_2_digit/weights/best.pt'
+    conf_thres = 0.8
 
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
