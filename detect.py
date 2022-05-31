@@ -57,6 +57,11 @@ from utils.torch_utils import select_device, time_sync
 import reader
 
 def regression_predict(xyxy, frame, gn, name, crop):
+    # 이미지 range 전처리
+    x, y, z = crop.shape
+    x1, x2 = x // 6, (x // 6) * 5
+    y1, y2 = y // 6, (y // 6) * 5
+    crop = crop[x1:x2, y1:y2]
 
     # # 모델 불러오기
     # r_model = tf.keras.models.load_model('./regression_models/model_8.h5')
@@ -74,6 +79,7 @@ def regression_predict(xyxy, frame, gn, name, crop):
     # LOGGER.info(f'class : {name}, predict : {predict_digit}')
     # predict_digit = str(predict_digit)
 
+    # image processing prediction
     angle, num = reader.predict(crop, name)
 
     # model 예측값 video에 표시
@@ -217,8 +223,6 @@ def run(
                         if save_crop:
                             # bounding box images
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-                            cv2.imshow('crop', crop)
-                            cv2.waitKey(1)
 
                             # regression thread
                             th1 = Thread(target=regression_predict, args=(xyxy, im0, gn, names[c], crop))
