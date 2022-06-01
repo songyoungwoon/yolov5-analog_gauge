@@ -25,6 +25,7 @@ Usage - formats:
 """
 
 import argparse
+import datetime
 import os
 import sys
 import time
@@ -58,33 +59,33 @@ import reader
 
 def regression_predict(xyxy, frame, gn, name, crop):
     # 이미지 range 전처리
-    x, y, z = crop.shape
-    x1, x2 = x // 6, (x // 6) * 5
-    y1, y2 = y // 6, (y // 6) * 5
-    crop = crop[x1:x2, y1:y2]
+    # x, y, z = crop.shape
+    # x1, x2 = x // 6, (x // 6) * 5
+    # y1, y2 = y // 6, (y // 6) * 5
+    # crop = crop[x1:x2, y1:y2]
 
-    # # 모델 불러오기
-    # r_model = tf.keras.models.load_model('./regression_models/model_8.h5')
-    # # 이미지 size 조정
-    # # int -> float
-    # scalingFactor = 1 / 255.0
-    # # Convert unsigned int 8bit to float
-    # crop = np.float32(crop)
-    # crop = crop * scalingFactor
-    # # input layer 형식 맞추기
-    # crop = cv2.resize(crop, (120, 120))
-    # crop = crop.reshape(1, 120, 120, 3)
-    # # model 평가 및 예측값
-    # predict_digit = np.squeeze(r_model.predict(crop))
-    # LOGGER.info(f'class : {name}, predict : {predict_digit}')
-    # predict_digit = str(predict_digit)
+    # 모델 불러오기
+    r_model = tf.keras.models.load_model('./regression_models/model_14.h5')
+    # 이미지 size 조정
+    # int -> float
+    scalingFactor = 1 / 255.0
+    # Convert unsigned int 8bit to float
+    crop = np.float32(crop)
+    crop = crop * scalingFactor
+    # input layer 형식 맞추기
+    crop = cv2.resize(crop, (120, 120))
+    crop = crop.reshape(1, 120, 120, 3)
+    # model 평가 및 예측값
+    predict_digit = np.squeeze(r_model.predict(crop))
+    LOGGER.info(f'class : {name}, predict : {predict_digit}')
+    predict_digit = str(predict_digit)
 
     # image processing prediction
-    angle, num = reader.predict(crop, name)
+    #angle, num = reader.predict(crop, name)
 
     # model 예측값 video에 표시
     xyxy = torch.tensor(xyxy).view(-1, 4)
-    cv2.putText(frame, str(num), (int(xyxy[0][0])+5, int(xyxy[0][1])+20), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0))
+    cv2.putText(frame, predict_digit, (int(xyxy[0][0])+5, int(xyxy[0][1])+20), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0))
 
     return
 
@@ -121,7 +122,7 @@ def run(
     view_img = True
     save_crop = True
     #exist_ok = True
-    nosave = True
+    #nosave = True
     source = 0
     weights = ROOT / 'runs/train/round1_2_digit/weights/best.pt'
     conf_thres = 0.8
@@ -223,6 +224,16 @@ def run(
                         if save_crop:
                             # bounding box images
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+
+                            u = "runs/imgs/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
+                            cv2.imwrite(u, crop)
+
+                            x, y, z = crop.shape
+                            x1, x2 = int(x // 3), int((x // 3) * 2)
+                            y1, y2 = int(y // 3), int((y // 3) * 2)
+                            crop = crop[x1:x2, y1:y2]
+                            cv2.imshow("crop", crop)
+                            cv2.waitKey(1)
 
                             # regression thread
                             th1 = Thread(target=regression_predict, args=(xyxy, im0, gn, names[c], crop))
