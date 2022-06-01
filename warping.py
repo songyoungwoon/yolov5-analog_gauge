@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 def warp(img):
-    image_size = 80
+    image_size = 100
     img = cv2.resize(img, (image_size, image_size))
     cv2.imshow("img", img)
     cv2.waitKey()
@@ -64,5 +64,5 @@ def warp(img):
     #cv2.imwrite("runs/imgs/test.jpg", img)
     return img
 
-img = cv2.imread("test2.jpg")
+img = cv2.imread("test.jpg")
 warp(img)
