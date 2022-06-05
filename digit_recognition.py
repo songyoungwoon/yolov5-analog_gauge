@@ -1,5 +1,8 @@
 # model.save("/content/mnist_model.h5")
 
+import time
+import datetime
+
 #MNIST 모델
 import tensorflow as tf
 import numpy as np
@@ -31,6 +34,7 @@ from PIL import Image
 #
 # for img in img_np:
 
+class_names = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 def digit_prediction(img):
     # 이미지 읽어오기
@@ -43,11 +47,10 @@ def digit_prediction(img):
     img_blur = cv2.GaussianBlur(img_gray, (5, 5), 0)
 
     # 이미지 내의 경계 찾기
-    ret, img_th = cv2.threshold(img_blur, 80, 255, cv2.THRESH_TOZERO_INV)
+    ret, img_th = cv2.threshold(img_gray, 20, 255, cv2.THRESH_TOZERO_INV)
 
     # 디지털 숫자 간극 없애기
     img_th = cv2.GaussianBlur(img_th, (11, 11), 0)
-
     # Contour(윤곽) 찾기
     contours, hierachy = cv2.findContours(img_th.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
@@ -60,7 +63,7 @@ def digit_prediction(img):
     # 직사각형 영역 추출 확인하기
     rectangle = []
     for rect in rects:
-        if rect[2] > 10 and rect[3] > 140:
+        if rect[2] > 20 and rect[3] > 50:
             rectangle.append(rect)
             cv2.circle(img_blur, (rect[0], rect[1]), 10, (0, 0, 255), -1)
             cv2.circle(img_blur, (rect[0] + rect[2], rect[1] + rect[3]), 10, (0, 0, 255), -1)
@@ -71,7 +74,7 @@ def digit_prediction(img):
 
     # 최종 이미지 파일용 배열
     mnist_imgs = []
-    margin_pixel = 15
+    margin_pixel = 2
 
     # 숫자 영역 추출 및 (28,28,1) reshape
 
@@ -80,6 +83,10 @@ def digit_prediction(img):
         im = img_for_class[rect[1] - margin_pixel:rect[1] + rect[3] + margin_pixel,
              rect[0] - margin_pixel:rect[0] + rect[2] + margin_pixel]
         row, col = im.shape[:2]
+
+        # u = "runs/rect_imgs/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
+        # time.sleep(1)
+        # cv2.imwrite(u, im)
 
         # 정방형 비율을 맞춰주기 위해 변수 이용
         bordersize = max(row, col)
@@ -103,35 +110,51 @@ def digit_prediction(img):
 
         # square 사이즈 (28,28)로 축소
         try:
-            resized_img = cv2.resize(square, dsize=(28, 28), interpolation=cv2.INTER_AREA)
+            resized_img = cv2.resize(square, dsize=(120, 120), interpolation=cv2.INTER_AREA)
             mnist_imgs.append(resized_img)
         except:
             break
 
-    model = tf.keras.models.load_model('mnist_models/mnist_model.h5')
+    model = tf.keras.models.load_model('mnist_models/aaa.h5')
     #model.summary()
 
     number = ""
     for i in range(len(mnist_imgs)):
         img = mnist_imgs[i]
-        cv2.imshow("img", img)
-        cv2.waitKey()
+
+        # cv2.imshow("img", img)
+        # cv2.waitKey()
+
+        # u = "runs/rect_imgs/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
+        # time.sleep(1)
+        # cv2.imwrite(u, img)
 
         # 이미지를 784개 흑백 픽셀로 사이즈 변환
-        img = img.reshape(-1, 28, 28, 1)
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        input_data = img.reshape(1, 120, 120, 3)
 
         # 데이터를 모델에 적용할 수 있도록 가공
-        input_data = ((np.array(img) / 255) - 1) * -1
+        # input_data = ((np.array(img) / 255) - 1) * -1
 
         # 클래스 예측 함수에 가공된 테스트 데이터 넣어 결과 도출
-        res = np.argmax(model.predict(input_data), axis=-1)
-        number = number + str(res[0])
-    print(number)
+        # res = np.argmax(model.predict(input_data), axis=-1)
+        # number = number + str(res[0])
+        predictions = model.predict(input_data)
+        score = tf.nn.softmax(predictions[0])
+        number = number + str(class_names[np.argmax(score)])
+        print(
+            "This image most likely belongs to {} with a {:.2f} percent confidence."
+                .format(class_names[np.argmax(score)], 100 * np.max(score))
+        )
     return(number)
 
-# img = cv2.imread("750.jpg")
+# for j in range(10):
+#     for i in range(17, 21, 1):
+#         img = cv2.imread(f"rect/{i}.jpg")
+#         digit_prediction(img)
+
+# img = cv2.imread("rect/3.jpg")
 # digit_prediction(img)
-
-
+#
 
 

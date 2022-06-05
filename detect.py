@@ -66,7 +66,7 @@ def regression_predict(xyxy, frame, gn, name, crop):
         # y1, y2 = y // 6, (y // 6) * 5
         # crop = crop[x1:x2, y1:y2]
         crop = cv2.resize(crop, (120, 120))
-        crop = crop[40:80, 40:80]
+        crop = crop[30:90, 30:90]
 
         # 모델 불러오기
         r_model = tf.keras.models.load_model('./regression_models/model_10.h5')
@@ -85,7 +85,10 @@ def regression_predict(xyxy, frame, gn, name, crop):
 
         # image processing prediction
         #angle, predict_digit = reader.predict(crop, name)
+
     elif name == 'digit':
+        # crop = cv2.resize(crop, (400, 400))
+        # crop = crop[80:320, :]
         predict_digit = digit_recognition.digit_prediction(crop)
 
     # model 예측값 video에 표시
@@ -130,6 +133,7 @@ def run(
     #exist_ok = True
     #nosave = True
     source = 0
+    # source = "a.jpg"
     weights = ROOT / 'runs/train/round1_2_digit/weights/best.pt'
     conf_thres = 0.8
 
@@ -231,12 +235,11 @@ def run(
                             # bounding box images
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
-                            # image save for warping
-                            #u = "runs/imgs/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
-                            #cv2.imwrite(u, crop)
+                            # # image save for warping
+                            # u = "rect/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
+                            # cv2.imwrite(u, crop)
 
-                            # crop = cv2.resize(crop, (120, 120))
-                            # crop = crop[40:80, 40:80]
+                            # crop image
                             cv2.imshow("crop", crop)
                             cv2.waitKey(1)
 
