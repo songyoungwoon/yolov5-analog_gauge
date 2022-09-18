@@ -41,3 +41,4 @@ def predict(img, cls):
     print("detect_num :", detect_digit_num(0, 360, angle.index(max(angle)), 12))
 
     return angle.index(max(angle)), detect_digit_num(0, 360, angle.index(max(angle)), 12)
+
