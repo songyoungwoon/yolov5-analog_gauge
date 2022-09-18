@@ -256,7 +256,7 @@ def run(
                             # bounding box images
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
-                            # # image save for warping
+                            # # image save
                             # u = "rect/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
                             # cv2.imwrite(u, crop)
 
