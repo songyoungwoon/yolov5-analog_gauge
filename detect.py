@@ -106,7 +106,7 @@ def regression_predict(xyxy, frame, gn, name, crop):
         LOGGER.info(f'class : {name}, predict : {predict_digit}')
 
         # image processing prediction
-        #angle, predict_digit = reader.predict(crop, name)
+        #angle, predict_digit = reader.digit_num_predict(crop, name)
 
     elif name == 'digit':
         crop = cv2.resize(crop, (400, 400))

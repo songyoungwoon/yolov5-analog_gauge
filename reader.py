@@ -26,7 +26,7 @@ def detect_digit_num(zero_angle, max_angle, detect_angle, max_num):
     detect_digit_num = max_num*detect_percent
     return round(detect_digit_num, 1)
 
-def digit_num_predict(img):
+def digit_num_predict(img, cls):
     image_size = 200
 
     img = cv2.resize(img, (image_size, image_size))
