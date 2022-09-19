@@ -58,12 +58,12 @@ def angle_predict(img):
     cv2.waitKey()
     angle = []
     for i in range(360):
-        arr2 = im_rotate(virtual_line, i)
-        bit_and = cv2.bitwise_and(canny, arr2)
-        angle.append(np.sum(bit_and))
+        for j in range(10):
+            arr2 = im_rotate(virtual_line, i+j/10)
+            bit_and = cv2.bitwise_and(canny, arr2)
+            angle.append(np.sum(bit_and))
+    return angle.index(max(angle))/10
 
-    return angle.index(max(angle))
-
-# img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
-# img = cv2.imread('./runs/imgs/220601_222330.jpg')
-# print(angle_predict(img))
+img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
+img = cv2.imread('./runs/imgs/220601_222330.jpg')
+print(angle_predict(img))
