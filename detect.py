@@ -28,6 +28,7 @@ import argparse
 import datetime
 import os
 import sys
+import shutil
 import time
 from pathlib import Path
 import numpy as np
@@ -308,6 +309,22 @@ def run(
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
     if save_txt or save_img:
+
+        ######### start to classification angle ##########
+        folder_name = 'classify_angle'
+        if not os.path.exists(os.path.join('./' + folder_name)):  # create classify_angle folder
+            os.mkdir('./' + folder_name)
+        angle = songs_angel(img) # return angle of image
+
+        for i in range(0, 360):
+            if not os.path.exists(os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
+                os.mkdir('./' + folder_name + '/' + str(i))
+
+        if os.path.exists(os.path.join('./' + folder_name + '/' + str(angle))):
+            shutil.copy('./img_path', './' + folder_name + '/' + str(angle) + '/temp.jpg') # img_path랑 저장될 이미지 이름(여기선 temp로 지정) 지정
+
+        ######### end classification angle ##########
+
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
