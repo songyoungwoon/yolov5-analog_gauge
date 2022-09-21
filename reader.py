@@ -3,10 +3,12 @@ import numpy as np
 
 def make_middle_line(arr):
     h, w = arr.shape
-    mh, mw = h//2, w//2
-    for i in range(mh//2):
-        arr[mh][mw] = 255
-        mh -= 1
+    mw = w//2 + 2
+    for i in range(6):
+        mh, mw = h//2, mw-1
+        for j in range(mh//2):
+            arr[mh][mw] = 255
+            mh -= 1
 
 def im_rotate(img, degree):
     h, w = img.shape
@@ -36,8 +38,8 @@ def digit_num_predict(img, cls):
 
     angle = []
     for i in range(360):
-        arr2 = im_rotate(virtual_line, i)
-        bit_and = cv2.bitwise_and(canny, arr2)
+        arr = im_rotate(virtual_line, i)
+        bit_and = cv2.bitwise_and(canny, arr)
         angle.append(np.sum(bit_and))
 
     print("detect_angle :", angle.index(max(angle)))
@@ -49,7 +51,7 @@ def angle_predict(img):
     image_size = 200
 
     img = cv2.resize(img, (image_size, image_size))
-    canny = cv2.Canny(img, 100, 255)
+    canny = cv2.Canny(img, 250, 255)
     virtual_line = np.zeros((image_size, image_size), dtype=np.uint8)
     make_middle_line(virtual_line)
 
@@ -59,11 +61,35 @@ def angle_predict(img):
     angle = []
     for i in range(360):
         for j in range(10):
-            arr2 = im_rotate(virtual_line, i+j/10)
-            bit_and = cv2.bitwise_and(canny, arr2)
+            arr = im_rotate(virtual_line, i+j/10)
+            bit_and = cv2.bitwise_and(canny, arr)
             angle.append(np.sum(bit_and))
-    return angle.index(max(angle))/10
+    print(angle)
+    max_angle = angle.index(max(angle))/10
+    angle[angle.index(max(angle))] = 0
+    next_max_angle = angle.index(max(angle))/10
+    middle_angle = (max_angle+next_max_angle) / 2
+
+    temp = np.zeros((image_size, image_size), dtype=np.uint8)
+    make_middle_line(temp)
+    temp = im_rotate(temp, max_angle)
+    cv2.imshow("max_angle", temp)
+
+    temp = np.zeros((image_size, image_size), dtype=np.uint8)
+    make_middle_line(temp)
+    temp = im_rotate(temp, next_max_angle)
+    cv2.imshow("next_max_angle", temp)
+
+    temp = np.zeros((image_size, image_size), dtype=np.uint8)
+    make_middle_line(temp)
+    temp = im_rotate(temp, middle_angle)
+    cv2.imshow("middle_angle", temp)
+    cv2.waitKey()
+    return middle_angle
 
 img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
+img = img[800:2500, 600:2500]
 img = cv2.imread('./runs/imgs/220601_222330.jpg')
+cv2.imshow('original', img)
+cv2.waitKey()
 print(angle_predict(img))
