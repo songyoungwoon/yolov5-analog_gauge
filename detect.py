@@ -259,6 +259,7 @@ def run(
                             plus_error = int_angle + 0.1
                             minus_error = int_angle - 0.1
                             if minus_error <= angle <= plus_error:
+                                angle = int(angle)
                                 folder_name = 'classify_angle'
                                 if not os.path.exists(os.path.join('./' + folder_name)):  # create classify_angle folder
                                     os.mkdir('./' + folder_name)
