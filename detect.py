@@ -254,21 +254,24 @@ def run(
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
                             ######### start to classification angle ##########
-                            folder_name = 'classify_angle'
-                            if not os.path.exists(os.path.join('./' + folder_name)):  # create classify_angle folder
-                                os.mkdir('./' + folder_name)
                             angle = reader.angle_predict(crop)  # return angle of image
+                            int_angle = int(angle)
+                            plus_error = int_angle + 0.1
+                            minus_error = int_angle - 0.1
+                            if minus_error <= angle <= plus_error:
+                                folder_name = 'classify_angle'
+                                if not os.path.exists(os.path.join('./' + folder_name)):  # create classify_angle folder
+                                    os.mkdir('./' + folder_name)
 
-                            for i in range(0, 360):
-                                if not os.path.exists(
-                                        os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
-                                    os.mkdir('./' + folder_name + '/' + str(i))
+                                for i in range(0, 360):
+                                    if not os.path.exists(
+                                            os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
+                                        os.mkdir('./' + folder_name + '/' + str(i))
 
-                            if os.path.exists(os.path.join('./' + folder_name + '/' + str(angle))):
-                                shutil.copy('./img_path', './' + folder_name + '/' + str(
-                                    angle) + '/temp.jpg')  # img_path랑 저장될 이미지 이름(여기선 temp로 지정) 지정
-
-                            ######### end classification angle ##########
+                                if os.path.exists(os.path.join('./' + folder_name + '/' + str(angle))):
+                                    shutil.copy('./img_path', './' + folder_name + '/' + str(
+                                        angle) + '/temp.jpg')  # img_path랑 저장될 이미지 이름(여기선 temp로 지정) 지정
+                                ######### end classification angle ##########
 
                             # regression thread
                             th1 = Thread(target=regression_predict, args=(xyxy, im0, gn, names[c], crop))
