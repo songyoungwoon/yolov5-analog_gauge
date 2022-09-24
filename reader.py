@@ -89,7 +89,7 @@ def angle_predict(img):
 
 img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
 img = img[800:2500, 600:2500]
-img = cv2.imread('./runs/imgs/220601_222330.jpg')
+#img = cv2.imread('./runs/imgs/220601_222330.jpg')
 cv2.imshow('original', img)
 cv2.waitKey()
 print(angle_predict(img))
