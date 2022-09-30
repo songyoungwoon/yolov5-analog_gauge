@@ -40,6 +40,8 @@ import torch.backends.cudnn as cudnn
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 device_lib.list_local_devices()
+
+# print available
 print(tf.test.is_built_with_cuda())
 print(tf.test.is_gpu_available())
 
@@ -150,13 +152,11 @@ def run(
         dnn=False,  # use OpenCV DNN for ONNX inference
 ):
     #test True
-    #view_img = True
     save_crop = True
-    #exist_ok = True
-    #nosave = True
-    source = 0
-    #source = "c.jpg"
-    weights = ROOT / 'runs/train/round1_2_digit/weights/best.pt'
+    #view_img = True
+    nosave = True
+    source = './video_data/clock_1.mp4'
+    #weights = ROOT / 'runs/train/five_clock_trained/weights/best.pt'
     conf_thres = 0.8
 
     source = str(source)
@@ -191,9 +191,11 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
+
     for path, im, im0s, vid_cap, s in dataset:
         # test sleep
-        # time.sleep(1)
+        # time.sleep(12)
+
         t1 = time_sync()
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -257,27 +259,32 @@ def run(
                             # bounding box images
                             crop = save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
-                            # # image save
-                            # u = "rect/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
-                            # cv2.imwrite(u, crop)
-
-                            # crop = cv2.resize(crop, (120, 120))
-                            # crop = crop[35:85, 35:85]
-                            # crop = 255 - crop
-
-                            # crop image
-                            cv2.imshow("crop", crop)
-                            cv2.waitKey(1)
-
-                            # # # # rect 이미지 저장 : 학습데이터 추출시 사용
-                            # u = "runs/round_imgs/" + str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))+".jpg"
-                            # time.sleep(1)
-                            # cv2.imwrite(u, crop)
+                            ######### start to classification angle ##########
+                            angle = reader.angle_predict(crop)  # return angle of image
+                            int_angle = int(angle)
+                            plus_error = int_angle + 0.1
+                            minus_error = int_angle - 0.1
+                            if minus_error <= angle <= plus_error:
+                                angle = int(angle)
+                                folder_name = 'classify_angle'
+                                # if not os.path.exists(os.path.join('./' + folder_name)):  # create classify_angle folder
+                                #     os.mkdir('./' + folder_name)
+                                # for i in range(0, 360):
+                                #     if not os.path.exists(
+                                #             os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
+                                #         os.mkdir('./' + folder_name + '/' + str(i))
+                                if os.path.exists(os.path.join('./' + folder_name + '/' + str(angle))):
+                                    # shutil.copy('./img_path', './' + folder_name + '/' + str(
+                                    #     angle) + '/temp.jpg')  # img_path랑 저장될 이미지 이름(여기선 temp로 지정) 지정
+                                    now_time = str(datetime.datetime.now().strftime("%y%m%d_%H%M%S"))
+                                    u = f"./{folder_name}/{str(angle)}/{now_time}.jpg"
+                                    cv2.imwrite(u, crop)
+                                ######### end classification angle ##########
 
                             # regression thread
-                            th1 = Thread(target=regression_predict, args=(xyxy, im0, gn, names[c], crop))
-                            th1.start()
-                            th1.join()
+                            # th1 = Thread(target=regression_predict, args=(xyxy, im0, gn, names[c], crop))
+                            # th1.start()
+                            # th1.join()
 
             # Stream results
             im0 = annotator.result()
@@ -309,22 +316,6 @@ def run(
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
     if save_txt or save_img:
-
-        ######### start to classification angle ##########
-        folder_name = 'classify_angle'
-        if not os.path.exists(os.path.join('./' + folder_name)):  # create classify_angle folder
-            os.mkdir('./' + folder_name)
-        angle = songs_angel(img) # return angle of image
-
-        for i in range(0, 360):
-            if not os.path.exists(os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
-                os.mkdir('./' + folder_name + '/' + str(i))
-
-        if os.path.exists(os.path.join('./' + folder_name + '/' + str(angle))):
-            shutil.copy('./img_path', './' + folder_name + '/' + str(angle) + '/temp.jpg') # img_path랑 저장될 이미지 이름(여기선 temp로 지정) 지정
-
-        ######### end classification angle ##########
-
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
@@ -368,7 +359,6 @@ def parse_opt():
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
     run(**vars(opt))
-
 
 if __name__ == "__main__":
     opt = parse_opt()

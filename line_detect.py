@@ -2,12 +2,16 @@ import cv2
 import numpy as np
 
 img = cv2.imread('./runs/imgs/220601_222330.jpg')
+img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
+img = img[800:2500, 600:2500]
+image_size = 200
+img = cv2.resize(img, (image_size, image_size))
 canny = cv2.Canny(img, 250, 255)
 
 cv2.imshow('img', canny)
 cv2.waitKey()
 
-lines = cv2.HoughLinesP(canny, 1, np.pi / 180., 30, minLineLength=5, maxLineGap=10)
+lines = cv2.HoughLinesP(canny, 1, np.pi / 180., 50, minLineLength=50, maxLineGap=10)
 print(lines)
 
 dst = cv2.cvtColor(canny, cv2.COLOR_GRAY2BGR)
