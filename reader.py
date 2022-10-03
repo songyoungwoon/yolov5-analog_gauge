@@ -66,11 +66,20 @@ def angle_predict(img):
     next_max_angle = angle.index(max(angle))/10
     middle_angle = (max_angle+next_max_angle) / 2
 
-    return middle_angle
+    virtual_line = np.zeros((image_size, image_size), dtype=np.uint8)
+    make_middle_line(virtual_line)
+    virtual_line = im_rotate(virtual_line, max_angle)
+    cv2.imshow('original', virtual_line)
+    cv2.waitKey()
 
-# img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
-# img = img[800:2500, 600:2500]
-# img = cv2.imread('./runs/imgs/220601_222330.jpg')
-# cv2.imshow('original', img)
-# cv2.waitKey()
-# print(angle_predict(img))
+    return next_max_angle
+
+img = cv2.imread('./clock/KakaoTalk_20220918_143024275.jpg')
+img = img[800:2500, 600:2500]
+img = cv2.imread('./runs/imgs/220601_222330.jpg')
+# 220929_131504
+# 220929_141512
+img = cv2.imread('./classify_angle/0/221001_180737.jpg')
+cv2.imshow('original', img)
+cv2.waitKey()
+print(angle_predict(img))
