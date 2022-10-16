@@ -5,14 +5,15 @@ import os
 import datetime
 import time
 
+
 angle = 0
-folder_name = 'classify_angle'
-# for i in range(0, 360):
-#     if not os.path.exists(
-#             os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
-#         os.mkdir('./' + folder_name + '/' + str(i))
+folder_name = 'classify_angle/Train'
+for i in range(0, 360):
+    if not os.path.exists(
+            os.path.join('./' + folder_name + '/' + str(i))):  # make 0 ~ 360 directory
+        os.mkdir('./' + folder_name + '/' + str(i))
 #left, up, right, down
-x1, y1, x2, y2 = 335, 200, 885, 745 #clock_1
+x1, y1, x2, y2 = 310, 180, 898, 750 #clock_1
 while True:
     image = cv2.cvtColor(np.array(ImageGrab.grab(bbox=(x1, y1, x2, y2))), cv2.COLOR_BGR2RGB)
     if os.path.exists(os.path.join('./' + folder_name + '/' + str(angle))):
